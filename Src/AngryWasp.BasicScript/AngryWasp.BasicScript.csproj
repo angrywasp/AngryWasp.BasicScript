@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../External/AngryWasp.Build/AngryWasp.Build.Library.targets" />
+  <Import Project="../../External/AngryWasp.Build/AngryWasp.Build.Pack.targets" />
+  <PropertyGroup>
+    <PackageId>AngryWasp.BasicScript</PackageId>
+    <PackageDescription>A Basic scripting language and interpreter</PackageDescription>
+    <RepositoryUrl>https://github.com/angrywasp/AngryWasp.BasicScript</RepositoryUrl>
+    <Author>Angry Wasp</Author>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AngryWasp.Cryptography" Version="3.0.12" />
+    <PackageReference Include="AngryWasp.Logger" Version="3.0.2" />
+  </ItemGroup>
+</Project>

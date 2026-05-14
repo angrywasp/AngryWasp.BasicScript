@@ -1,0 +1,3 @@
+func testIncludedFunc()
+    print "Included function"
+end

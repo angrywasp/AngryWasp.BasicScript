@@ -1,0 +1,74 @@
+rem include basically inserts the content of the included file into the current script.
+rem path is relative to the directory the main script is in
+include "include.bs"
+
+print "Running test.bs"
+
+rem BSI_SOURCE env var points to this script file
+print env("BSI_SOURCE")
+
+rem Test setting/getting and environment variable
+env("TEST_VAR", "Hello World")
+
+rem require checks a var equals a specific value
+rem this one should pass
+require(env("TEST_VAR"), "Hello World")
+assert env("TEST_VAR") == "Hello World"
+assert env("TEST_VAR") != "Random string"
+rem this one should fail
+rem require(envVar, "Some wrong value")
+
+rem test an if statement 0 == false, anything else == true, similar to C
+const true = 1
+const false = 0
+
+var testArray = [
+    "Hello",
+    "World"
+]
+
+rem uncomment to test redefining a constant. Script should fail
+rem const true = 3
+
+if true == 1 then
+    print "X = true"
+else
+    print "X = false"
+endif
+
+var x = 1 + 2
+assert x == 3
+
+var y = (1 + 2) * 2
+assert y == 6
+
+var z = 1 + 2 * 2
+assert z == 5
+
+rem test a loop. For loops only, not early exit (yet)
+rem count up
+loop x = 5 to 8
+    print x - 5
+next x
+
+rem count down
+loop x = 8 to 5
+    print x - 5
+next x
+
+var s = 1
+
+
+func test() local
+    print "Test Function"
+end
+
+test()
+
+testIncludedFunc()
+
+print "Type something..."
+input userInput
+print "You typed: " + userInput
+
+

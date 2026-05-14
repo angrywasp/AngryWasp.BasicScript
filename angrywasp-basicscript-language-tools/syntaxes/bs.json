@@ -1,0 +1,66 @@
+{
+    "name": "BasicScript",
+    "patterns": [
+        {
+            "include": "#rules"
+        },
+        {
+            "include": "#strings"
+        }
+    ],
+    "repository": {
+        "rules": {
+            "name": "bs.language",
+            "patterns": [
+                {
+                    "name": "bs.language.modifiers",
+                    "match": "(?i)\\b(and|or|not)\\s+"
+                },
+                {
+                    "name": "bs.language.word",
+                    "match": "\\s*([\\w.]+)(\\s*)\\("
+                },
+                {
+                    "name": "bs.language.number",
+                    "match": "(?i)-?\\d+(\\d+)?\\b"
+                },
+                {
+                    "name": "bs.language.hex",
+                    "match": "(?i)\\b0x[a-f0-9]+\\b"
+                },
+                {
+                    "name": "bs.language.keyword",
+                    "match": "(?i)\\b(print|input|var|ref|const|include)\\s+"
+                },
+                {
+                    "name": "bs.language.keyword.function",
+                    "match": "(?i)\\b(func|end|string|int|bytes|local|global)\\b"
+                },
+                {
+                    "name": "bs.language.keyword.branch",
+                    "match": "(?i)\\b(if|endif|then|else|loop|to|next|and|or)\\b"
+                },
+                {
+                    "name": "bs.language.keyword.control",
+                    "match": "(?i)\\b(goto|exit|assert|call)\\b"
+                },
+                {
+                    "name": "bs.language.keyword.comment",
+                    "match": "(?i)(^|\\s+)(rem|'|#!).*"
+                }
+            ]
+        },
+        "strings": {
+            "name": "string.quoted.double.bs",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.bs",
+                    "match": "\\\\."
+                }
+            ]
+        }
+    },
+    "scopeName": "source.bs"
+}

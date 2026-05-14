@@ -1,0 +1,4 @@
+<Solution>
+    <Project Path="AngryWasp.BasicScript/AngryWasp.BasicScript.csproj" />
+  <Project Path="AngryWasp.BasicScript.Interpreter/AngryWasp.BasicScript.Interpreter.csproj" />
+</Solution>

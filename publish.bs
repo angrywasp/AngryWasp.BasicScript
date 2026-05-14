@@ -1,0 +1,40 @@
+var repoName = "AngryWasp.BasicScript.Interpreter"
+var incrementLevel = "patch"
+
+var versions = http("https://api.nuget.org/v3-flatcontainer/" + repoName + "/index.json")
+var version = jq(versions, "versions")
+var count = split(trim(version, "[]\r\n"), ",", "array")
+
+version = trim(trimws(array[count - 1]), "\"")
+print "Old version: " + version
+
+split(version, ".", "semver")
+
+var major = 0
+var minor = 0
+var patch = 0
+
+if incrementLevel = "major" then
+    major = int(semver[0]) + 1
+    minor = 0
+    patch = 0
+else
+    if incrementLevel = "minor" then
+        major = int(semver[0])
+        minor = int(semver[1]) + 1
+        patch = 0
+    else
+        major = int(semver[0])
+        minor = int(semver[1]) 
+        patch = int(semver[2]) + 1
+    endif
+endif
+
+version = fmt("{0}.{1}.{2}", major, minor, patch)
+print "New version: " + version
+
+var apiKey = read("NUGET_API_KEY")
+
+exec("dotnet", "build -c Release Src/" + repoName + ".slnx -p:PackageVersion=" + version)
+exec("dotnet", "pack -c Release Src/" + repoName + ".slnx -p:PackageVersion=" + version)
+exec("dotnet", "nuget push Bin/Binaries/" + repoName + "." + version + ".nupkg --source https://api.nuget.org/v3/index.json --api-key " + apiKey)

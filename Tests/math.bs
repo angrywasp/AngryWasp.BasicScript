@@ -1,0 +1,10 @@
+var x = 1 + 2
+require(x, 3)
+
+var y = (1 + 2) * 2
+require(y, 6)
+
+var z = 1 + 2 * 2
+require(z, 5)
+
+print "OK"

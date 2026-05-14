@@ -1,0 +1,21 @@
+rem | There are two ways to assert a value
+rem | First is the assert operator. It will test that a var is true or false
+rem | Next is the require intrinsic. It will take two arguments and compare type and equality
+rem | If unsure, use require. Assert is faster, but limited. require is more robust and will provide a reason for failure
+
+env("TEST_VAR", "Hello World")
+
+var x = 0
+func test(int ref arg)
+    arg = env("TEST_VAR") == "Hello World"
+end
+
+test(x)
+assert x
+print x
+
+rem | this will pass
+require(env("TEST_VAR"), "Hello World")
+
+rem | this will fail
+require(env("TEST_VAR"), "Random string")
