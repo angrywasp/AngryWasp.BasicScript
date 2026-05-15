@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using AngryWasp.Helpers;
+using Newtonsoft.Json.Serialization;
 
 namespace AngryWasp.BasicScript
 {
@@ -206,6 +208,9 @@ namespace AngryWasp.BasicScript
                     string str = "";
                     while (GetChar(ref marker, ref lastCharacter) != '"')
                     {
+                        if (lastCharacter == (char)0)
+                            throw new Exception("Unexpected end of file while building string.Potential unclused quotes");
+
                         if (lastCharacter == '\\')
                         {
                             // parse \n, \t, \\, \"

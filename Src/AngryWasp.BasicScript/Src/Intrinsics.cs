@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using AngryWasp.Cryptography;
 using AngryWasp.Helpers;
+using Org.BouncyCastle.Bcpg;
 
 namespace AngryWasp.BasicScript
 {
@@ -163,10 +164,25 @@ namespace AngryWasp.BasicScript
             if (a.Type != Value_Type.String)
                 throw new ArgumentException($"not function is not valid on value with type {a.Type}");
 
-            if (!interpreter.Variables.ContainsKey(a.String))
-                throw new Exception($"Variable {a.String} not found");
+            (bool IsArrayDeclaration, Value[] Values) var = default;
 
-            var var = interpreter.Variables[a.String];
+            if (interpreter.CallStack.CurrentFunction != null)
+            {
+                if (interpreter.CallStack.CurrentFunction.Constants.ContainsKey(a.String))
+                    var = interpreter.CallStack.CurrentFunction.Constants[a.String];
+                else if (interpreter.CallStack.CurrentFunction.Variables.ContainsKey(a.String))
+                    var = interpreter.CallStack.CurrentFunction.Variables[a.String];
+            }
+            else
+            {
+                if (interpreter.Constants.ContainsKey(a.String))
+                    var = interpreter.Constants[a.String];
+                else  if (interpreter.Variables.ContainsKey(a.String))
+                    var = interpreter.Variables[a.String];     
+            }
+
+            if (var == default)
+                throw new Exception($"Variable {a.String} not found");
                 
             return new Value(var.IsArrayDeclaration ? var.Values.Length : 1);
         }

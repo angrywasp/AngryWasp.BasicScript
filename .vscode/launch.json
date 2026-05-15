@@ -8,7 +8,7 @@
             "preLaunchTask": "build-debug",
             "program": "${workspaceFolder}/Bin/Binaries/AngryWasp.BasicScript.Interpreter.dll",
             "args": [
-                "${workspaceFolder}/Tests/assert.bs",
+                "${workspaceFolder}/Tests/nestedLoop.bs",
                 "scriptArgument"
             ],
             "cwd": "${workspaceFolder}",

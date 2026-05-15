@@ -2,3 +2,4 @@
 **/obj
 Bin
 NUGET_API_KEY
+**/*.csproj.lscache

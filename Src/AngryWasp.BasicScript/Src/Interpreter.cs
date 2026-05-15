@@ -25,7 +25,7 @@ namespace AngryWasp.BasicScript
         private Dictionary<string, Marker> labels;
         private Dictionary<string, (Marker Marker, bool Increment, Value V1, Value V2)> loops;
         private Dictionary<string, (bool IsLocal, Marker Marker, List<ScriptArgument> Arguments)> functions;
-        
+
         private IExecutionContext executionContext;
 
         private Dictionary<string, Func<Interpreter, List<Value>, Value>> funcs;
@@ -178,10 +178,15 @@ namespace AngryWasp.BasicScript
             Console.ForegroundColor = lastColor;
         }
 
-        void Match(Token tok)
+        void Match(params Token[] tok)
         {
-            if (lastToken != tok)
-                Error($"Expected {tok}, got {lastToken}");
+            foreach (var t in tok)
+            {
+                if (t == lastToken)
+                    return;
+            }
+            
+            Error($"Unexpected token {lastToken}");
         }
 
         public void Exec()
@@ -260,7 +265,7 @@ namespace AngryWasp.BasicScript
                 default:
                     Console.Write(lex.Source);
                     Error($"Expect keyword got {keyword}");
-                    
+
                     break;
             }
         }
@@ -542,7 +547,7 @@ namespace AngryWasp.BasicScript
                             {
                                 if (functions[name].Arguments[argList.Count].Ref && consts.ContainsKey(ident))
                                     Warning("Using a constant as a ref argument will not modify the value of the constant. The script will have unexpected results");
-                                
+
                                 if (consts.ContainsKey(ident))
                                 {
                                     var index = ReadArrayIndexer(ident, consts);
@@ -794,7 +799,7 @@ namespace AngryWasp.BasicScript
                 {
                     while (lastToken == Token.NewLine)
                         GetNextToken();
-                        
+
                     var val = Expr();
 
                     SetVar(declaration, id, val, true, offset++);
@@ -831,7 +836,15 @@ namespace AngryWasp.BasicScript
             Match(Token.To);
 
             GetNextToken();
+            var iteratorToken = lastToken;
+            Match(Token.MoreEqual, Token.LessEqual, Token.More, Token.Less);
+
+            GetNextToken();
+
             Value v2 = Expr();
+
+            if (v1.BinOp(v2, Token.ExactEqual).Integer == 1)
+                ExitLoop();
 
             // save for loop marker
             if (loops.ContainsKey(var))
@@ -839,10 +852,13 @@ namespace AngryWasp.BasicScript
             else
             {
                 SetVar(true, var, v1, false, 0);
-                loops.Add(var, (lineMarker, v1.BinOp(v2, Token.Less).Integer == 1 ? true : false, v1, v2));
+                loops.Add(var, (lineMarker, (v1.BinOp(v2, Token.Less).Integer == 1 || v1.BinOp(v2, Token.LessEqual).Integer == 1) ? true : false, v1, v2));
             }
 
-            if (GetVar(var, 0).BinOp(v2, loops[var].Increment ? Token.More : Token.Less).Integer == 1)
+            if (GetVar(var, 0).BinOp(v2, iteratorToken).Integer == 0)
+                ExitLoop();
+
+            void ExitLoop()
             {
                 while (true)
                 {
@@ -863,35 +879,13 @@ namespace AngryWasp.BasicScript
         {
             Match(Token.Identifier);
             string var = lex.Identifier;
-            var nextToken = lex.PeekToken();
 
-            if (nextToken == Token.NewLine)
-            {
-                var newValue = GetVar(var, 0).BinOp(new Value(1), loops[var].Increment ? Token.Plus : Token.Minus);
-                SetVar(false, var, newValue, false, 0);
-                lex.GoTo(new Marker(loops[var].Marker.Pointer - 1, loops[var].Marker.Line, loops[var].Marker.Column - 1));
-                //hack: set to NewLine to get past an error elsewhere as this shorthand is not a fully evaluated expression
-                lastToken = Token.NewLine;
-            }
-            else
-            {
-                GetNextToken();
-                if (lastToken != nextToken)
-                    Error("Unexpected system error. peeked token != fetched token");
+            var exp = Expr();
+            var l = loops[var];
 
-                if (loops[var].Increment && lastToken != Token.Plus)
-                    Error($"Expected expression to increment loop counter, got {lastToken}");
-
-                if (!loops[var].Increment && lastToken != Token.Minus)
-                    Error($"Expected expression to decrement loop counter, got {lastToken}");
-
-                var tok = lastToken;
-                var expr = Expr();
-                var newValue = GetVar(var, 0).BinOp(expr, tok);
-                SetVar(false, var, newValue, false, 0);
-                lex.GoTo(new Marker(loops[var].Marker.Pointer - 1, loops[var].Marker.Line, loops[var].Marker.Column - 1));
-                lastToken = Token.NewLine;
-            }
+            SetVar(false, var, exp, false, 0);
+            lex.GoTo(new Marker(l.Marker.Pointer - 1, l.Marker.Line, l.Marker.Column - 1));
+            lastToken = Token.NewLine;
         }
 
         void Assert()
@@ -960,7 +954,7 @@ namespace AngryWasp.BasicScript
             if (list[ident].IsArrayDeclaration)
             {
                 if (!GetArrayIndex(out var index))
-                    Debugger.Break();
+                    Error("Failed to get array index");
                 else
                     prim = list[ident].Values[index];
             }
@@ -1057,12 +1051,12 @@ namespace AngryWasp.BasicScript
                 // '(' expr ')'
                 GetNextToken();
 
-                while(lastToken == Token.NewLine)
+                while (lastToken == Token.NewLine)
                     GetNextToken();
 
                 prim = Expr();
 
-                while(lastToken == Token.NewLine)
+                while (lastToken == Token.NewLine)
                     GetNextToken();
 
                 Match(Token.RParen);

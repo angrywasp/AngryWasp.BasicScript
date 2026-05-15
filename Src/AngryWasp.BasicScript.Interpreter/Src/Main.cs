@@ -37,7 +37,7 @@ namespace AngryWasp.BasicScript.App
             }
             catch (BasicException ex)
             {
-                Console.WriteLine($"{ex.Message}: Line {ex.line}");
+                Console.WriteLine($"{ex.Message}: Line {ex.line}, Col {ex.column}");
             }
             catch (Exception ex)
             {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 
 namespace AngryWasp.BasicScript.App
@@ -26,6 +27,11 @@ namespace AngryWasp.BasicScript.App
             interpreter.AddFunction("files", Files);
             interpreter.AddFunction("dirs", Dirs);
             interpreter.AddFunction("read", Read);
+            interpreter.AddFunction("mk", MakeFile);
+            interpreter.AddFunction("rm", RemoveFile);
+            interpreter.AddFunction("mkdir", MakeDir);
+            interpreter.AddFunction("rmdir", RemoveDir);
+            interpreter.AddFunction("pause", Pause);
         }
 
         private void ValidateArgs(List<Value> args, int expectedCount)
@@ -104,11 +110,32 @@ namespace AngryWasp.BasicScript.App
 
         public Value FileName(Interpreter interpreter, List<Value> args)
         {
-            if (args.Count != 1)
-                throw new ArgumentException($"Incorrect number of arguments. Expected 1, got {args.Count}");
+            if (args.Count < 1 || args.Count > 2)
+                throw new ArgumentException($"Incorrect number of arguments. Expected 1 or 2, got {args.Count}");
 
             if (args[0].Type != Value_Type.String)
                     throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+            if (args.Count == 1)
+            {
+                if (args[0].Type != Value_Type.String)
+                    throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+                return new Value(Path.GetFileName(args[0].String));
+            }
+            else if (args.Count == 2)
+            {
+                if (args[0].Type != Value_Type.String)
+                    throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+                if (args[1].Type != Value_Type.Integer)
+                    throw new ArgumentException($"Argument 1 is incompatible type {args[0].Type}");
+
+                if (args[1].Integer == 0)
+                    return new Value(Path.GetFileNameWithoutExtension(args[0].String));
+                else
+                    return new Value(Path.GetFileName(args[0].String));
+            }
 
             return new Value(Path.GetFileName(args[0].String));
         }
@@ -248,11 +275,108 @@ namespace AngryWasp.BasicScript.App
             var path = Path.Combine(Environment.GetEnvironmentVariable("BSI_SOURCE_DIR"), args[0].String);
 
             if (!File.Exists(path))
-                throw new FileNotFoundException($"File npt found {path}");
+                throw new FileNotFoundException($"File not found {path}");
 
             var text = File.ReadAllText(path);
 
             return new Value(text);
+        }
+
+        public Value MakeDir(Interpreter interpreter, List<Value> args)
+        {
+            if (args.Count != 1)
+                throw new ArgumentException($"Incorrect number of arguments. Expected 1, got {args.Count}");
+
+            if (args[0].Type != Value_Type.String)
+                throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+            string path = args[0].String;
+
+            if (!Path.IsPathFullyQualified(path))
+                path = Path.Combine(Environment.GetEnvironmentVariable("BSI_SOURCE_DIR"), path);
+
+            if (Directory.Exists(path))
+                throw new ArgumentException("Cannot create directory. Already exists");
+
+            Directory.CreateDirectory(path);
+
+            return new Value(path);
+        }
+
+        public Value RemoveDir(Interpreter interpreter, List<Value> args)
+        {
+            if (args.Count != 1)
+                throw new ArgumentException($"Incorrect number of arguments. Expected 1, got {args.Count}");
+
+            if (args[0].Type != Value_Type.String)
+                throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+            string path = args[0].String;
+
+            if (!Path.IsPathFullyQualified(path))
+                path = Path.Combine(Environment.GetEnvironmentVariable("BSI_SOURCE_DIR"), path);
+
+            if (!Directory.Exists(path))
+                throw new ArgumentException("Cannot remove what doesn't exist");
+
+            Directory.Delete(path, true);
+
+            return new Value(path);
+        }
+
+        public Value MakeFile(Interpreter interpreter, List<Value> args)
+        {
+            if (args.Count != 1)
+                throw new ArgumentException($"Incorrect number of arguments. Expected 1, got {args.Count}");
+
+            if (args[0].Type != Value_Type.String)
+                throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+            string path = args[0].String;
+
+            if (!Path.IsPathFullyQualified(path))
+                path = Path.Combine(Environment.GetEnvironmentVariable("BSI_SOURCE_DIR"), path);
+
+            if (File.Exists(path))
+                throw new ArgumentException("Cannot create file. Already exists");
+
+            File.Create(path);
+
+            return new Value(path);
+        }
+
+        public Value RemoveFile(Interpreter interpreter, List<Value> args)
+        {
+            if (args.Count != 1)
+                throw new ArgumentException($"Incorrect number of arguments. Expected 1, got {args.Count}");
+
+            if (args[0].Type != Value_Type.String)
+                throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+            string path = args[0].String;
+
+            if (!Path.IsPathFullyQualified(path))
+                path = Path.Combine(Environment.GetEnvironmentVariable("BSI_SOURCE_DIR"), path);
+
+            if (!Directory.Exists(path))
+                throw new ArgumentException("Cannot remove what doesn't exist");
+
+            File.Delete(path);
+
+            return new Value(path);
+        }
+
+        public Value Pause(Interpreter interpreter, List<Value> args)
+        {
+            if (args.Count != 1)
+                throw new ArgumentException($"Incorrect number of arguments. Expected 1, got {args.Count}");
+
+            if (args[0].Type != Value_Type.Integer)
+                throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+            Thread.Sleep((int)args[0].Integer);
+
+            return new Value(1);
         }
     }
 }
