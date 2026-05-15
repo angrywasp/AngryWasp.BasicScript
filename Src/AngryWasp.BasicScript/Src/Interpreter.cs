@@ -106,6 +106,16 @@ namespace AngryWasp.BasicScript
         {
             if (varList.ContainsKey(name))
             {
+                if (varList[name].IsArrayDeclaration && !isArray)
+                {
+                    Debugger.Break();
+                }
+                
+                if (!varList[name].IsArrayDeclaration && isArray)
+                {
+                    Debugger.Break();
+                }
+
                 if (varList[name].Values.Length <= index)
                 {
                     var d = varList[name].IsArrayDeclaration;
@@ -158,8 +168,6 @@ namespace AngryWasp.BasicScript
                 SetVar(vars, name, val, isArray, index);
             }
         }
-
-        public string GetLine() => lex.GetLine(lineMarker);
 
         public void AddFunction(string name, Func<Interpreter, List<Value>, Value> function)
         {
@@ -327,7 +335,7 @@ namespace AngryWasp.BasicScript
                     }
                 }
             }
-            lex.GoTo(labels[name]);
+            lex.Jump(labels[name]);
             lastToken = Token.NewLine;
         }
 
@@ -878,20 +886,16 @@ namespace AngryWasp.BasicScript
         void Next()
         {
             Match(Token.Identifier);
-            string var = lex.Identifier;
+            var l = loops[lex.Identifier];
 
-            var exp = Expr();
-            var l = loops[var];
-
-            SetVar(false, var, exp, false, 0);
-            lex.GoTo(new Marker(l.Marker.Pointer - 1, l.Marker.Line, l.Marker.Column - 1));
+            SetVar(false, lex.Identifier, Expr(), false, 0);
+            lex.Jump(new Marker(l.Marker.Pointer - 1, l.Marker.Line, l.Marker.Column - 1));
             lastToken = Token.NewLine;
         }
 
         void Assert()
         {
-            var expr = Expr();
-            bool result = expr.BinOp(new Value(0), Token.ExactEqual).Integer == 1;
+            bool result = Expr().BinOp(new Value(0), Token.ExactEqual).Integer == 1;
 
             if (result)
                 Error("Assertion fault");

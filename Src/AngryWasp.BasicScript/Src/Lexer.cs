@@ -18,8 +18,6 @@ namespace AngryWasp.BasicScript
         public string Identifier { get; set; }
         public Value Value { get; set; }
 
-        public char LastChar => lastChar;
-
         public Lexer(string input)
         {
             source = input;
@@ -34,36 +32,12 @@ namespace AngryWasp.BasicScript
             lastChar = GetChar();
         }
 
-        public void GoTo(Marker marker) => sourceMarker = marker;
-
-        public void GoToLine(int lineNumber)
+        public char PeekChar()
         {
-            string[] lines = source.Split(Environment.NewLine);
-            int offset = 0;
-            for (int i = 0; i < lineNumber; i++)
-                offset += lines[i].Length;
+            var m = sourceMarker;
+            var lc = lastChar;
 
-            var marker = new Marker(offset, lineNumber, 0);
-            Jump(marker);
-        }
-
-        public string GetLine(Marker marker)
-        {
-            Marker oldMarker = sourceMarker;
-            marker.Pointer--;
-            GoTo(marker);
-
-            string line = "";
-            do
-            {
-                line += GetChar();
-            } while (lastChar != '\n' && lastChar != (char)0);
-
-            line.Remove(line.Length - 1);
-
-            GoTo(oldMarker);
-
-            return line;
+            return GetChar(ref m, ref lc);
         }
 
         public char GetChar() => GetChar(ref sourceMarker, ref lastChar);
@@ -91,8 +65,7 @@ namespace AngryWasp.BasicScript
             var m = sourceMarker;
             var lc = lastChar;
 
-            var tok = GetToken(ref m, ref lc);
-            return tok;
+            return GetToken(ref m, ref lc);
         }
 
         public Token GetToken(ref Marker marker, ref char lastCharacter)
