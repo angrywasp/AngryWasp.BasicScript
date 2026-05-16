@@ -1,11 +1,13 @@
 print "Starting the loop"
 
-loop x = 0 to < 3
-    loop y = 0 to <= 3
+loop i = 0 to <= 2
+    var x = i
+    loop j = 0 to <= 2
+        var y = j
         print y
-    next y + 1
-    print x
-    print ""
-next x + 1
+    next j + 1   
+print x
+print ""
+next i + 1
 
 print "Ended the loop"

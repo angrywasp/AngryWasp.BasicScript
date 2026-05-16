@@ -28,7 +28,6 @@ namespace AngryWasp.BasicScript
         public Marker ReturnMarker { get; set; }
         public Dictionary<string, StackObjectArgument> Arguments { get; set; } = new Dictionary<string, StackObjectArgument>();
         public Dictionary<string, Variable> Variables { get; set; } = new Dictionary<string, Variable>();
-        public Dictionary<string, Variable> Constants { get; set; } = new Dictionary<string, Variable>();
     }
 
     public class CallStack
