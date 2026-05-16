@@ -1,18 +1,19 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace AngryWasp.BasicScript
 {
     public class StackObjectArgument
     {
-        public string VarName { get; set; }
+        public string Name { get; set; }
         public Value Value { get; set; }
         public bool IsArray { get; set; }
         public int Index { get; set; }
 
-        public StackObjectArgument(string varName, Value value, bool isArray, int index)
+        public StackObjectArgument(string name, Value value, bool isArray, int index)
         {
-            this.VarName = varName;
+            this.Name = name;
             this.Value = value;
             this.IsArray = isArray;
             this.Index = index;
@@ -26,8 +27,8 @@ namespace AngryWasp.BasicScript
         public Marker EntryMarker { get; set; }
         public Marker ReturnMarker { get; set; }
         public Dictionary<string, StackObjectArgument> Arguments { get; set; } = new Dictionary<string, StackObjectArgument>();
-        public Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> Variables { get; set; } = new Dictionary<string, (bool IsArrayDeclaration, Value[] Values)>();
-        public Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> Constants { get; set; } = new Dictionary<string, (bool IsArrayDeclaration, Value[] Values)>();
+        public Dictionary<string, Variable> Variables { get; set; } = new Dictionary<string, Variable>();
+        public Dictionary<string, Variable> Constants { get; set; } = new Dictionary<string, Variable>();
     }
 
     public class CallStack
@@ -60,10 +61,16 @@ namespace AngryWasp.BasicScript
             
             foreach (var a in obj.Arguments.Values)
             {
-                if (a.VarName == null)
+                if (a.Name == null)
                     continue;
 
-                interpreter.SetVar(false, a.VarName, a.Value, a.IsArray, a.Index);
+                if (a.Index != 0)
+                    Debugger.Break();
+
+                if (a.IsArray)
+                    Debugger.Break();
+
+                interpreter.SetVar(false, new Variable(a.Name, a.IsArray, [ a.Value ]));
             }
             lexer.Jump(obj.ReturnMarker);
         }

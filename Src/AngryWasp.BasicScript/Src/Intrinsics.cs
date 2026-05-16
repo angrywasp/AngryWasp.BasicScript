@@ -162,9 +162,9 @@ namespace AngryWasp.BasicScript
             var a = args[0];
 
             if (a.Type != Value_Type.String)
-                throw new ArgumentException($"not function is not valid on value with type {a.Type}");
+                throw new ArgumentException($"count function is not valid on value with type {a.Type}");
 
-            (bool IsArrayDeclaration, Value[] Values) var = default;
+            Variable var = null;
 
             if (interpreter.CallStack.CurrentFunction != null)
             {
@@ -184,7 +184,7 @@ namespace AngryWasp.BasicScript
             if (var == default)
                 throw new Exception($"Variable {a.String} not found");
                 
-            return new Value(var.IsArrayDeclaration ? var.Values.Length : 1);
+            return new Value(var.IsArray ? var.Values.Length : 1);
         }
 
         public static Value Require(Interpreter interpreter, List<Value> args)

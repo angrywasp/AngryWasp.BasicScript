@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Principal;
 
 namespace AngryWasp.BasicScript
@@ -20,8 +21,8 @@ namespace AngryWasp.BasicScript
         private Token prevToken;
         private Token lastToken;
 
-        private Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> vars;
-        private Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> consts;
+        private Dictionary<string, Variable> vars;
+        private Dictionary<string, Variable> consts;
         private Dictionary<string, Marker> labels;
         private Dictionary<string, (Marker Marker, bool Increment, Value V1, Value V2)> loops;
         private Dictionary<string, (bool IsLocal, Marker Marker, List<ScriptArgument> Arguments)> functions;
@@ -38,17 +39,17 @@ namespace AngryWasp.BasicScript
 
         public CallStack CallStack => callStack;
 
-        public Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> Variables => vars;
+        public Dictionary<string, Variable> Variables => vars;
 
-        public Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> Constants => consts;
+        public Dictionary<string, Variable> Constants => consts;
 
         public Interpreter(string input, IExecutionContext executionContext)
         {
             this.executionContext = executionContext;
             this.lex = new Lexer(input);
             this.callStack = new CallStack(this, this.lex);
-            this.vars = new Dictionary<string, (bool IsArrayDeclaration, Value[] Values)>();
-            this.consts = new Dictionary<string, (bool IsArrayDeclaration, Value[] Values)>();
+            this.vars = new Dictionary<string, Variable>();
+            this.consts = new Dictionary<string, Variable>();
             this.labels = new Dictionary<string, Marker>();
             this.loops = new Dictionary<string, (Marker, bool, Value, Value)>();
             this.funcs = new Dictionary<string, Func<Interpreter, List<Value>, Value>>();
@@ -84,89 +85,92 @@ namespace AngryWasp.BasicScript
             return vars[name].Values[index];
         }
 
-        public void SetConst(Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> constList, string name, Value[] val, bool isArray)
+        public void SetConst(Dictionary<string, Variable> constList, Variable variable)
         {
-            if (constList.ContainsKey(name))
+            if (constList.ContainsKey(variable.Name))
                 Error("Reassignment of constant value");
 
-            constList.Add(name, (isArray, val));
+            constList.Add(variable.Name, variable);
         }
 
-        public void SetConst(string name, Value[] val, bool isArray)
+        public void SetConst(Variable variable)
         {
             var func = callStack.CurrentFunction;
 
             if (func != null)
-                SetConst(func.Constants, name, val, isArray);
+                SetConst(func.Constants, variable);
             else
-                SetConst(consts, name, val, isArray);
+                SetConst(consts, variable);
         }
 
-        public void SetVar(Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> varList, string name, Value val, bool isArray, int index)
-        {
-            if (varList.ContainsKey(name))
-            {
-                if (varList[name].IsArrayDeclaration && !isArray)
-                {
-                    Debugger.Break();
-                }
-                
-                if (!varList[name].IsArrayDeclaration && isArray)
-                {
-                    Debugger.Break();
-                }
-
-                if (varList[name].Values.Length <= index)
-                {
-                    var d = varList[name].IsArrayDeclaration;
-                    var a = varList[name].Values;
-                    Array.Resize(ref a, index + 1);
-                    varList[name] = (d, a);
-                }
-
-                varList[name].Values[index] = val;
-            }
-            else
-            {
-                var valArray = new Value[index + 1];
-                valArray[index] = val;
-                varList.Add(name, (isArray, valArray));
-            }
-        }
-
-        public void SetVar(bool declaration, string name, Value val, bool isArray, int index)
+        public void SetVar(bool declaration, Variable variable)
         {
             var func = callStack.CurrentFunction;
 
             if (func != null)
             {
-                if (func.Constants.ContainsKey(name))
+                if (func.Constants.ContainsKey(variable.Name))
                     Debugger.Break();
 
                 if (declaration)
-                    SetVar(func.Variables, name, val, isArray, index);
+                    func.Variables[variable.Name] = variable;
                 else
                 {
-                    if (func.Arguments.ContainsKey(name))
-                        func.Arguments[name].Value = val;
-                    else if (func.Variables.ContainsKey(name))
-                        SetVar(func.Variables, name, val, isArray, index);
+                    if (func.Arguments.ContainsKey(variable.Name))
+                        func.Arguments[variable.Name].Value = variable.Values[0]; //could index be something other than 0?
+                    else if (func.Variables.ContainsKey(variable.Name))
+                        func.Variables[variable.Name] = variable;
                     else
                     {
                         if (func.IsLocal)
                             Error("Local functions may not set global variables. Use a ref function parameter");
 
-                        SetVar(vars, name, val, isArray, index);
+                        vars[variable.Name] = variable;
                     }
                 }
             }
             else
             {
-                if (consts.ContainsKey(name))
-                    Debugger.Break();
+                if (consts.ContainsKey(variable.Name))
+                    Debugger.Break(); //this shouldn't happen
 
-                SetVar(vars, name, val, isArray, index);
+                vars[variable.Name] = variable;
             }
+        }
+
+        private void SetVar(string name, Value value, int index)
+        {
+            var func = callStack.CurrentFunction;
+
+            void Set(Dictionary<string, Variable> list, string name, Value value, int index)
+            {
+                if (!list[name].IsArray)
+                    Error("Attempt to set indexed value of non-array");
+
+                var v = list[name].Values;
+
+                if (index >= v.Length)
+                    Array.Resize(ref v, index + 1);
+
+                v[index] = value;
+
+                list[name].Values = v;
+            }
+
+            if (func != null)
+            {
+                if (func.Variables.ContainsKey(name))
+                    Set(func.Variables, name, value, index);
+                else
+                {
+                    if (func.IsLocal)
+                        Error("Local functions may not set global variables. Use a ref function parameter");
+
+                    Set(vars, name, value, index);
+                }
+            }
+            else
+                Set(vars, name, value, index);
         }
 
         public void AddFunction(string name, Func<Interpreter, List<Value>, Value> function)
@@ -193,7 +197,7 @@ namespace AngryWasp.BasicScript
                 if (t == lastToken)
                     return;
             }
-            
+
             Error($"Unexpected token {lastToken}");
         }
 
@@ -207,6 +211,8 @@ namespace AngryWasp.BasicScript
             }
             catch (Exception ex)
             {
+                
+                Console.WriteLine(ex.StackTrace);
                 Error(ex.Message);
             }
         }
@@ -261,11 +267,12 @@ namespace AngryWasp.BasicScript
                 case Token.Function: Function(); break;
                 case Token.End: End(); break;
                 case Token.Identifier:
-                    if (lastToken == Token.Equals) Var(false);
+                    if (lastToken == Token.Equals || lastToken == Token.LSParen) Var(false);
                     else if (lastToken == Token.Colon) Label();
                     else if (functions.ContainsKey(lex.Identifier)) Call();
                     else if (funcs.ContainsKey(lex.Identifier)) CallIntrinsic();
-                    else goto default;
+                    else
+                        goto default;
                     break;
                 case Token.EOF:
                     exit = true;
@@ -297,14 +304,15 @@ namespace AngryWasp.BasicScript
             {
                 Match(Token.Identifier);
 
-                if (!vars.ContainsKey(lex.Identifier)) vars.Add(lex.Identifier, (false, new Value[] { new Value() }));
+                if (!vars.ContainsKey(lex.Identifier))
+                    vars.Add(lex.Identifier, null);
 
                 string input = inputHandler?.Invoke();
 
                 if (input.ParseInt128(out Int128 i))
-                    vars[lex.Identifier] = (false, new Value[] { new Value(i) });
+                    vars[lex.Identifier] = new Variable(lex.Identifier, false, [ new Value(i) ]);
                 else
-                    vars[lex.Identifier] = (false, new Value[] { new Value(input) });
+                    vars[lex.Identifier] = new Variable(lex.Identifier, false, [ new Value(input) ]);
 
                 GetNextToken();
                 if (lastToken != Token.Comma) break;
@@ -471,10 +479,10 @@ namespace AngryWasp.BasicScript
             Match(Token.LParen);
             GetNextToken();
 
-            int ReadArrayIndexer(string ident, Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> list)
+            int ReadArrayIndexer(string ident, Dictionary<string, Variable> list)
             {
                 int index = 0;
-                if (list[ident].IsArrayDeclaration)
+                if (list[ident].IsArray)
                 {
                     GetNextToken();
                     while (lastToken == Token.NewLine)
@@ -524,28 +532,40 @@ namespace AngryWasp.BasicScript
                                 {
                                     var index = ReadArrayIndexer(ident, cf.Constants);
 
-                                    argList.Add(new StackObjectArgument(null, cf.Constants[ident].Values[index], cf.Constants[ident].IsArrayDeclaration, index));
+                                    if (index != 0)
+                                        Debugger.Break();
+
+                                    argList.Add(new StackObjectArgument(null, cf.Constants[ident].Values[index], cf.Constants[ident].IsArray, index));
                                     GetNextToken();
                                 }
                                 else if (cf.Variables.ContainsKey(ident))
                                 {
                                     var index = ReadArrayIndexer(ident, cf.Variables);
 
-                                    argList.Add(new StackObjectArgument(ident, GetVar(ident, index), cf.Variables[ident].IsArrayDeclaration, index));
+                                    if (index != 0)
+                                        Debugger.Break();
+
+                                    argList.Add(new StackObjectArgument(ident, GetVar(ident, index), cf.Variables[ident].IsArray, index));
                                     GetNextToken();
                                 }
                                 else if (consts.ContainsKey(ident))
                                 {
                                     var index = ReadArrayIndexer(ident, consts);
 
-                                    argList.Add(new StackObjectArgument(null, consts[ident].Values[index], consts[ident].IsArrayDeclaration, index));
+                                    if (index != 0)
+                                        Debugger.Break();
+
+                                    argList.Add(new StackObjectArgument(null, consts[ident].Values[index], consts[ident].IsArray, index));
                                     GetNextToken();
                                 }
                                 else if (vars.ContainsKey(ident))
                                 {
                                     var index = ReadArrayIndexer(ident, vars);
 
-                                    argList.Add(new StackObjectArgument(ident, GetVar(ident, index), vars[ident].IsArrayDeclaration, index));
+                                    if (index != 0)
+                                        Debugger.Break();
+
+                                    argList.Add(new StackObjectArgument(ident, GetVar(ident, index), vars[ident].IsArray, index));
                                     GetNextToken();
                                 }
                                 else
@@ -560,14 +580,20 @@ namespace AngryWasp.BasicScript
                                 {
                                     var index = ReadArrayIndexer(ident, consts);
 
-                                    argList.Add(new StackObjectArgument(null, consts[ident].Values[index], consts[ident].IsArrayDeclaration, index));
+                                    if (index != 0)
+                                        Debugger.Break();
+
+                                    argList.Add(new StackObjectArgument(null, consts[ident].Values[index], consts[ident].IsArray, index));
                                     GetNextToken();
                                 }
                                 else if (vars.ContainsKey(ident))
                                 {
                                     var index = ReadArrayIndexer(ident, vars);
 
-                                    argList.Add(new StackObjectArgument(ident, GetVar(ident, index), vars[ident].IsArrayDeclaration, index));
+                                    if (index != 0)
+                                        Debugger.Break();
+
+                                    argList.Add(new StackObjectArgument(ident, GetVar(ident, index), vars[ident].IsArray, index));
                                     GetNextToken();
                                 }
                                 else
@@ -607,7 +633,7 @@ namespace AngryWasp.BasicScript
                 //by wiping out names where ref is false, we are explicitly only modifying variables in higher order scopes if we request that action through use of the ref keyword
                 //without this, every variable gets passed to the function by reference
                 if (!isRef)
-                    a.VarName = null;
+                    a.Name = null;
 
                 if (argType != a.Value.Type)
                     Error($"Expected argument type {argType}. Got {a.Value.Type}");
@@ -746,14 +772,32 @@ namespace AngryWasp.BasicScript
                     GetNextToken();
                 }
 
-                SetConst(id, values.ToArray(), true);
+                SetConst(new Variable(id, true, values.ToArray()));
             }
             else
-                SetConst(id, new Value[] { Expr() }, false);
+                SetConst(new Variable(id, false, [ Expr() ]));
         }
 
         void Var(bool declaration)
         {
+            int index = 0;
+            bool arrayIndexer = false;
+            if (lastToken == Token.LSParen)
+            {
+                //setting an element of an array
+                GetNextToken();
+                var expr = Expr();
+                Match(Token.RSParen);
+
+                if (expr.Type != Value_Type.Integer)
+                    Error("Array indexer must be an integer");
+
+                GetNextToken();
+
+                index = (int)expr.Integer;
+                arrayIndexer = true;
+            }
+
             if (lastToken != Token.Equals)
             {
                 Match(Token.Identifier);
@@ -767,6 +811,9 @@ namespace AngryWasp.BasicScript
 
             if (declaration)
             {
+                if (index > 0)
+                    Error("Attempt to set array index without setting arrag");
+
                 if (cf != null)
                 {
                     if (cf.Arguments.ContainsKey(id))
@@ -801,25 +848,24 @@ namespace AngryWasp.BasicScript
             GetNextToken();
             if (lastToken == Token.LSParen)
             {
+                var token = lex.PeekToken();
+
                 GetNextToken();
-                int offset = 0;
+                token = lex.PeekToken();
+                var values = new List<Value>();
                 while (true)
                 {
                     while (lastToken == Token.NewLine)
                         GetNextToken();
 
-                    var val = Expr();
-
-                    SetVar(declaration, id, val, true, offset++);
+                    values.Add(Expr());
 
                     while (lastToken == Token.NewLine)
                         GetNextToken();
 
-                    if (lastToken == Token.NewLine)
-                        Error("Expected ], got NewLine");
-
                     if (lastToken == Token.RSParen)
                     {
+                        SetVar(declaration, new Variable(id, true, values.ToArray()));
                         GetNextToken();
                         break;
                     }
@@ -828,7 +874,16 @@ namespace AngryWasp.BasicScript
                 }
             }
             else
-                SetVar(declaration, id, Expr(), false, 0);
+            {
+                var expr = Expr();
+                if (arrayIndexer)
+                {
+                    
+                    SetVar(id, expr, index);
+                }
+                else
+                    SetVar(declaration, new Variable(id, false, [ expr ]));
+            }
         }
 
         void Loop()
@@ -859,7 +914,7 @@ namespace AngryWasp.BasicScript
                 loops[var] = (lineMarker, loops[var].Increment, v1, v2);
             else
             {
-                SetVar(true, var, v1, false, 0);
+                SetVar(true, new Variable(var, false, [ v1 ]));
                 loops.Add(var, (lineMarker, (v1.BinOp(v2, Token.Less).Integer == 1 || v1.BinOp(v2, Token.LessEqual).Integer == 1) ? true : false, v1, v2));
             }
 
@@ -888,7 +943,7 @@ namespace AngryWasp.BasicScript
             Match(Token.Identifier);
             var l = loops[lex.Identifier];
 
-            SetVar(false, lex.Identifier, Expr(), false, 0);
+            SetVar(true, new Variable(lex.Identifier, false, [ Expr() ]));
             lex.Jump(new Marker(l.Marker.Pointer - 1, l.Marker.Line, l.Marker.Column - 1));
             lastToken = Token.NewLine;
         }
@@ -933,7 +988,7 @@ namespace AngryWasp.BasicScript
             return lhs;
         }
 
-        public Value Primary(Dictionary<string, (bool IsArrayDeclaration, Value[] Values)> list, string name)
+        public Value Primary(Dictionary<string, Variable> list, string name)
         {
             Value prim = default;
 
@@ -952,10 +1007,11 @@ namespace AngryWasp.BasicScript
                 Match(Token.RSParen);
                 index = (int)e.Integer;
                 return true;
-            };
+            }
+            ;
 
             var ident = lex.Identifier;
-            if (list[ident].IsArrayDeclaration)
+            if (list[ident].IsArray)
             {
                 if (!GetArrayIndex(out var index))
                     Error("Failed to get array index");

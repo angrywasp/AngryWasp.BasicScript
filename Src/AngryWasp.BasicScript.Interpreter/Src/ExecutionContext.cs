@@ -47,9 +47,9 @@ namespace AngryWasp.BasicScript.App
             var dict = interpreter.CallStack.CurrentFunction != null ? interpreter.CallStack.CurrentFunction.Variables : interpreter.Variables;
 
             if (dict.ContainsKey(varName))
-                dict[varName] = (true, entries.Select(x => new Value(x)).ToArray());
+                dict[varName] = new Variable(varName, true, entries.Select(x => new Value(x)).ToArray());
             else
-                dict.Add(varName, (true, entries.Select(x => new Value(x)).ToArray()));
+                dict.Add(varName, new Variable(varName, true, entries.Select(x => new Value(x)).ToArray()));
 
             return new Value(dict[varName].Values.Length);
         }

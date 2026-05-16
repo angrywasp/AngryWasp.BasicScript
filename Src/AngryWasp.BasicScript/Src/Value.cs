@@ -134,7 +134,7 @@ namespace AngryWasp.BasicScript
                     return this.Integer.ToString();
                 case Value_Type.Bytes:
                     return this.Bytes.ToPrefixedHex();
-                default: throw new Exception($"Unsupported type {this.Type.ToString()}");
+                default: return this.Type.ToString();
             }
         }
     }
