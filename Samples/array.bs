@@ -1,0 +1,24 @@
+rem | Arrays are just buckets of values. You can put any of the primitive value types in here; string, integer, bytes
+rem | likewise, you can redefine an array variable to a single value and vice versa. No fucks given
+
+var array = [ 10, 20 ]
+
+require(count("array"), 2)
+
+array = [ 10, 20, 30, 40 ]
+
+require(count("array"), 4)
+
+array = [ 5, 10 ]
+
+require(count("array"), 2)
+
+var x = array[0]
+var y = array[1]
+
+require(x, 5)
+require(y, 10)
+
+array[0] = 15
+
+require(array[0], 15)

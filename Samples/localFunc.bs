@@ -1,0 +1,17 @@
+var x = 0
+var y = 0
+
+func localFunc() local
+    var arg = 1
+    assert arg
+end
+
+func localFunc2(int arg) local
+    arg = 1
+end
+
+localFunc()
+
+localFunc2(y)
+assert y
+print y

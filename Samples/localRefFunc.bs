@@ -1,0 +1,10 @@
+
+
+var x = 0
+
+func localFunc(int ref arg) local
+    arg = 1
+end
+
+localFunc(x)
+assert x
