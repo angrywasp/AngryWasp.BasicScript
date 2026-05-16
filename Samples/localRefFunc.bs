@@ -1,3 +1,8 @@
+rem | BasicScript recognises 2 levels of variable scope, local and global
+rem | local is confined to the currently executing script block, such as a function or loop
+rem | global scope is the script level scope. functions can be set as either local of global with the corresponding modifier
+rem | local functions cannot set variables outside their own local scope. To be able to do so,
+rem | you pass a reference to the function using the ref modifier, as demonstrated here. An attempt to set x directly within the function would fail
 
 
 var x = 0

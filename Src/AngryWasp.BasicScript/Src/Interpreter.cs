@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace AngryWasp.BasicScript
 {
@@ -78,14 +79,6 @@ namespace AngryWasp.BasicScript
             return variables[name].Values[index];
         }
 
-        public void SetConst(Dictionary<string, Variable> constList, Variable variable)
-        {
-            if (constList.ContainsKey(variable.Name))
-                Error("Reassignment of constant value");
-
-            constList.Add(variable.Name, variable);
-        }
-
         public void SetVar(bool declaration, Variable variable)
         {
             var func = callStack.CurrentFunction;
@@ -123,6 +116,9 @@ namespace AngryWasp.BasicScript
             {
                 if (!list[name].IsArray)
                     Error("Attempt to set indexed value of non-array");
+
+                if (list[name].IsConstant)
+                    Error("Attempt to set constant");
 
                 var v = list[name].Values;
 
@@ -244,7 +240,7 @@ namespace AngryWasp.BasicScript
                 case Token.Function: Function(); break;
                 case Token.End: End(); break;
                 case Token.Identifier:
-                    if (lastToken == Token.Equals || lastToken == Token.LSParen) Var(false, null);
+                    if (lastToken == Token.Equals || lastToken == Token.LSParen) Var(false, false);
                     else if (lastToken == Token.Colon) Label();
                     else if (functions.ContainsKey(lex.Identifier)) Call();
                     else if (intrinsics.ContainsKey(lex.Identifier)) CallIntrinsic();
@@ -432,6 +428,10 @@ namespace AngryWasp.BasicScript
                         GetNextToken();
                         Match(Token.NewLine);
                         goto exit;
+                    /*case Token.Identifier:
+                        argList.Add(new Value(lex.Identifier));
+                        GetNextToken();
+                        continue;*/
                     default:
                         argList.Add(Expr());
                         break;
@@ -668,7 +668,7 @@ namespace AngryWasp.BasicScript
 
         void Exit() => exit = true;
 
-        void Var(bool declaration, bool? constant)
+        void Var(bool declaration, bool constant)
         {
             int index = 0;
             bool arrayIndexer = false;
@@ -723,13 +723,17 @@ namespace AngryWasp.BasicScript
             {
                 if (cf != null)
                 {
-                    if (!cf.Arguments.ContainsKey(id) && !cf.Variables.ContainsKey(id) && !variables.ContainsKey(id))
+                    if (!cf.Arguments.ContainsKey(id) && !cf.Variables.ContainsKey(id))
                         Error($"Variable {id} is not defined");
+                    else if (cf.Variables[id].IsConstant)
+                        Error($"Attempt to redefine constant {id} in function {cf.FunctionName}");
                 }
                 else
                 {
                     if (!variables.ContainsKey(id))
                         Error($"Variable {id} is not defined");
+                    else if (variables[id].IsConstant)
+                        Error($"Attempt to redefine constant {id}");
                 }
             }
 
@@ -750,7 +754,7 @@ namespace AngryWasp.BasicScript
 
                     if (lastToken == Token.RSParen)
                     {
-                        SetVar(declaration, new Variable(id, true, values.ToArray(), loopId: loopId));
+                        SetVar(declaration, new Variable(id, true, values.ToArray(), constant, loopId));
                         GetNextToken();
                         break;
                     }
@@ -767,7 +771,7 @@ namespace AngryWasp.BasicScript
                     SetVar(id, expr, index);
                 }
                 else
-                    SetVar(declaration, new Variable(id, false, [ expr ], loopId: loopId));
+                    SetVar(declaration, new Variable(id, false, [ expr ], constant, loopId));
             }
         }
 
@@ -897,8 +901,7 @@ namespace AngryWasp.BasicScript
                 Match(Token.RSParen);
                 index = (int)e.Integer;
                 return true;
-            }
-            ;
+            };
 
             var ident = lex.Identifier;
             if (list[ident].IsArray)

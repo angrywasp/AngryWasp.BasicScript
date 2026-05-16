@@ -1,0 +1,13 @@
+var x = [ 1, 2, 3 ]
+var y = 0
+
+rem | OK
+y = 1
+
+rem | Arrays are just buckets for variables. you can set a value of any kind to any index
+x[4] = "hello"
+
+rem | You can also set a variable from an array to a single value and vice versa
+x = 1
+
+assert x

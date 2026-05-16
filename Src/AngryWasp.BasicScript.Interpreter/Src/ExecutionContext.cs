@@ -554,7 +554,7 @@ namespace AngryWasp.BasicScript.App
                 path = Path.Combine(Environment.GetEnvironmentVariable("BSI_SOURCE_DIR"), path);
 
             if (!Directory.Exists(path))
-                throw new ArgumentException("Cannot remove what doesn't exist");
+                return new Value(path);
 
             Directory.Delete(path, true);
 
@@ -595,8 +595,8 @@ namespace AngryWasp.BasicScript.App
             if (!Path.IsPathFullyQualified(path))
                 path = Path.Combine(Environment.GetEnvironmentVariable("BSI_SOURCE_DIR"), path);
 
-            if (!Directory.Exists(path))
-                throw new ArgumentException("Cannot remove what doesn't exist");
+            if (!File.Exists(path))
+                return new Value(path);
 
             File.Delete(path);
 
