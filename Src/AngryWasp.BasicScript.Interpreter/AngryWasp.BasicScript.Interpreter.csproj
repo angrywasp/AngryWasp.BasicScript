@@ -15,5 +15,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="AngryWasp.Logger" Version="3.0.2" />
     <PackageReference Include="AngryWasp.Net" Version="3.0.20" />
+    <PackageReference Include="AngryWasp.Cli" Version="3.0.10" />
   </ItemGroup>
 </Project>

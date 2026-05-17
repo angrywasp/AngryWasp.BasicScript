@@ -8,7 +8,10 @@
             "preLaunchTask": "build-debug",
             "program": "${workspaceFolder}/Bin/Binaries/AngryWasp.BasicScript.Interpreter.dll",
             "args": [
-                "${workspaceFolder}/Samples/scratchpad.bs"
+                "--script", "${workspaceFolder}/Samples/scratchpad.bs",
+                "--entry", "doStuff(\"whatever\", 1)",
+                "--env", "hello",
+                "--env", "world"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",

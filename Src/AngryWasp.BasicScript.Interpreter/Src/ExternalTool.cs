@@ -30,10 +30,22 @@ namespace AngryWasp.BasicScript.App
                 process.BeginErrorReadLine();
 
                 process.OutputDataReceived += (sender, args) => {
+                    if (string.IsNullOrEmpty(args.Data))
+                        return;
+
+                    if (args.Data.Length == 0)
+                        return;
+
                     Console.WriteLine(args.Data);
                 };
                 
                 process.ErrorDataReceived += (sender, args) => {
+                    if (string.IsNullOrEmpty(args.Data))
+                        return;
+
+                    if (args.Data.Length == 0)
+                        return;
+
                     Console.WriteLine(args.Data);
                 };
 

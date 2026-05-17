@@ -39,6 +39,8 @@ namespace AngryWasp.BasicScript
 
         public Dictionary<string, Variable> Variables => variables;
 
+        public Lexer Lexer => lex;
+
         public Interpreter(string input, IExecutionContext executionContext)
         {
             this.executionContext = executionContext;
@@ -53,7 +55,7 @@ namespace AngryWasp.BasicScript
             this.executionContext.Install(this);
         }
 
-        public Value GetVar(string name, int index)
+        Value GetVar(string name, int index)
         {
             var func = callStack.CurrentFunction;
 
@@ -81,6 +83,17 @@ namespace AngryWasp.BasicScript
 
         public void SetVar(bool declaration, Variable variable)
         {
+            void Set(Dictionary<string, Variable> list)
+            {
+                if (declaration)
+                    list[variable.Name] = variable;
+                else
+                {
+                    list[variable.Name].IsArray = variable.IsArray;
+                    list[variable.Name].Values = variable.Values;
+                }
+            }
+
             var func = callStack.CurrentFunction;
 
             if (func != null)
@@ -92,27 +105,25 @@ namespace AngryWasp.BasicScript
                     if (func.Arguments.ContainsKey(variable.Name))
                         func.Arguments[variable.Name].Value = variable.Values[0]; //could index be something other than 0?
                     else if (func.Variables.ContainsKey(variable.Name))
-                        func.Variables[variable.Name] = variable;
+                        Set(func.Variables);
                     else
                     {
                         if (func.IsLocal)
                             Error("Local functions may not set global variables. Use a ref function parameter");
 
-                        variables[variable.Name] = variable;
+                        Set(variables);
                     }
                 }
             }
             else
-            {
-                variables[variable.Name] = variable;
-            }
+                Set(variables);
         }
 
-        private void SetVar(string name, Value value, int index)
+        void SetVar(string name, Value value, int index)
         {
             var func = callStack.CurrentFunction;
 
-            void Set(Dictionary<string, Variable> list, string name, Value value, int index)
+            void Set(Dictionary<string, Variable> list)
             {
                 if (!list[name].IsArray)
                     Error("Attempt to set indexed value of non-array");
@@ -133,17 +144,17 @@ namespace AngryWasp.BasicScript
             if (func != null)
             {
                 if (func.Variables.ContainsKey(name))
-                    Set(func.Variables, name, value, index);
+                    Set(func.Variables);
                 else
                 {
                     if (func.IsLocal)
                         Error("Local functions may not set global variables. Use a ref function parameter");
 
-                    Set(variables, name, value, index);
+                    Set(variables);
                 }
             }
             else
-                Set(variables, name, value, index);
+                Set(variables);
         }
 
         public void AddIntrinsic(string name, Func<Interpreter, List<Value>, Value> function)
@@ -184,10 +195,15 @@ namespace AngryWasp.BasicScript
             }
             catch (Exception ex)
             {
-                
                 Console.WriteLine(ex.StackTrace);
                 Error(ex.Message);
             }
+        }
+
+        public void ResetToken()
+        {
+            lastToken = prevToken = Token.NewLine;
+            lex.GetChar();
         }
 
         Token GetNextToken()
@@ -216,6 +232,11 @@ namespace AngryWasp.BasicScript
 
             if (lastToken != Token.NewLine && lastToken != Token.EOF)
                 Error("Expected new line got " + lastToken.ToString());
+        }
+
+        public void AppendLine(string line)
+        {
+            
         }
 
         void Statment()
@@ -443,7 +464,7 @@ namespace AngryWasp.BasicScript
             intrinsics[name](this, argList);
         }
 
-        private void Call()
+        void Call()
         {
             var name = lex.Identifier;
 
@@ -882,7 +903,7 @@ namespace AngryWasp.BasicScript
             return lhs;
         }
 
-        public Value Primary(Dictionary<string, Variable> list, string name)
+        Value Primary(Dictionary<string, Variable> list, string name)
         {
             Value prim = default;
 

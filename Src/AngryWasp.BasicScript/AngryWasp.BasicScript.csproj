@@ -8,7 +8,7 @@
     <Author>Angry Wasp</Author>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AngryWasp.Cryptography" Version="3.0.12" />
+    <PackageReference Include="AngryWasp.Cryptography" Version="3.0.13" />
     <PackageReference Include="AngryWasp.Logger" Version="3.0.2" />
   </ItemGroup>
 </Project>

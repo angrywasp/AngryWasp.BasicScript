@@ -1,5 +1,8 @@
 using System;
 using System.IO;
+using AngryWasp.Cli;
+using AngryWasp.Cli.Args;
+using AngryWasp.Cli.Config;
 
 namespace AngryWasp.BasicScript.App
 {
@@ -7,32 +10,46 @@ namespace AngryWasp.BasicScript.App
     {
         private static void Main(string[] rawArgs)
         {
-            if (rawArgs.Length == 0)
+            var parsedArgs = Arguments.Parse(rawArgs);
+            CommandLine cl = new CommandLine();
+            string[,] extras = {
+                {"env", "Set environment variables for use by the script."}
+            };
+
+            if (!ConfigMapper<CommandLine>.Process(parsedArgs, cl, extras))
+                return;
+
+            Application.RegisterCommands();
+                
+            if (string.IsNullOrEmpty(cl.Script))
             {
-                Console.WriteLine("No arguments");
+                Console.WriteLine("No script file");
                 return;
             }
 
-            if (!File.Exists(rawArgs[0]))
+            if (!File.Exists(cl.Script))
             {
-                Console.WriteLine($"File '{rawArgs[0]}' does not exist");
+                Console.WriteLine($"Script '{cl.Script}' does not exist");
                 return;
             }
 
             Environment.SetEnvironmentVariable("BSI_SOURCE_DIR", Path.GetDirectoryName(Path.GetFullPath(rawArgs[0])));
             Environment.SetEnvironmentVariable("BSI_SOURCE", Path.GetFullPath(rawArgs[0]));
 
-            if (rawArgs.Length > 1)
-            {
-                for (int i = 1; i < rawArgs.Length; i++)
-                    Environment.SetEnvironmentVariable($"${i}", rawArgs[i]);
-            }
+            var x = 0;
+            for (int i = 0; i < rawArgs.Length; i++)
+                if (rawArgs[i].ToLower() == "--env")
+                    Environment.SetEnvironmentVariable($"${++x}", rawArgs[++i]);
 
             try
             {
-                var interpreter = new Interpreter(File.ReadAllText(rawArgs[0]), new ExecutionContext());
+                var interpreter = new Interpreter(File.ReadAllText(cl.Script), new ExecutionContext());
                 interpreter.printHandler += Console.WriteLine;
                 interpreter.inputHandler += Console.ReadLine;
+                interpreter.Exec();
+                interpreter.Lexer.AppendSource("\r\n" + cl.Entry + "\r\n");
+                interpreter.ResetToken();
+                Console.WriteLine(interpreter.Lexer.Source);
                 interpreter.Exec();
             }
             catch (BasicException ex)

@@ -35,6 +35,8 @@ namespace AngryWasp.BasicScript.App
             interpreter.AddIntrinsic("decode", Decode);
             interpreter.AddIntrinsic("hash", Hash);
 
+            interpreter.AddIntrinsic("substr", SubString);
+            interpreter.AddIntrinsic("substring", SubString);
             interpreter.AddIntrinsic("exec", Exec);
             interpreter.AddIntrinsic("pwd", Pwd);
             interpreter.AddIntrinsic("cd", Cd);
@@ -614,6 +616,35 @@ namespace AngryWasp.BasicScript.App
             Thread.Sleep((int)args[0].Integer);
 
             return new Value(1);
+        }
+
+        public Value SubString(Interpreter interpreter, List<Value> args)
+        {
+            if (args.Count < 2 || args.Count > 3)
+                throw new ArgumentException($"Incorrect number of arguments. Expected 2 - 3, got {args.Count}");
+
+            if (args[0].Type != Value_Type.String)
+                throw new ArgumentException($"Argument 0 is incompatible type {args[0].Type}");
+
+            if (args.Count == 2)
+            {
+                if (args[1].Type != Value_Type.Integer)
+                    throw new ArgumentException($"Argument 1 is incompatible type {args[0].Type}");
+
+                return new Value(args[0].String.Substring((int)args[1].Integer));
+            }
+            else if (args.Count == 3)
+            {
+                if (args[1].Type != Value_Type.Integer)
+                    throw new ArgumentException($"Argument 1 is incompatible type {args[0].Type}");
+
+                if (args[2].Type != Value_Type.Integer)
+                    throw new ArgumentException($"Argument 2 is incompatible type {args[0].Type}");
+
+                return new Value(args[0].String.Substring((int)args[1].Integer, (int)args[2].Integer));
+            }
+
+            return new Value();
         }
     }
 }

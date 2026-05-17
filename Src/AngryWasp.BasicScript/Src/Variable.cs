@@ -4,19 +4,25 @@ namespace AngryWasp.BasicScript
 {
     public class Variable
     {
-        public string Name { get; set; }
+        private string name;
+        private string loopId;
+        private bool isConstant;
+
+        public string Name => name;
+        public string LoopID => loopId;
+        public bool IsConstant => isConstant;
+
         public bool IsArray { get; set; }
         public Value[] Values { get; set; }
-        public string LoopID { get; set; }
-        public bool IsConstant { get; set; }
 
         public Variable(string name, bool isArray, Value[] values, bool isConstant = false, string loopId = null)
         {
-            Name = name;
+            this.name = name;
+            this.isConstant = isConstant;
+            this.loopId = loopId;
+
             IsArray = isArray;
             Values = values;
-            IsConstant = isConstant;
-            LoopID = loopId;
         }
 
         public override string ToString() => Name;

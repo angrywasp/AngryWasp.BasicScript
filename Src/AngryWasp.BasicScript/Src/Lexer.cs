@@ -26,6 +26,7 @@ namespace AngryWasp.BasicScript
         }
 
         public void InsertSource(string input) => source = source.Insert(sourceMarker.Pointer + 1, input);
+        public void AppendSource(string input) => source += input;
 
         public void Jump(Marker marker) {
             this.sourceMarker = marker;
@@ -182,7 +183,7 @@ namespace AngryWasp.BasicScript
                     while (GetChar(ref marker, ref lastCharacter) != '"')
                     {
                         if (lastCharacter == (char)0)
-                            throw new Exception("Unexpected end of file while building string.Potential unclused quotes");
+                            throw new Exception("Unexpected end of file while building string. Potential unclused quotes");
 
                         if (lastCharacter == '\\')
                         {
