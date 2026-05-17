@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using AngryWasp.Cli;
 using AngryWasp.Cli.Args;
 using AngryWasp.Cli.Config;
@@ -10,6 +11,34 @@ namespace AngryWasp.BasicScript.App
     {
         private static void Main(string[] rawArgs)
         {
+            string scriptFile = null;
+            //script file always needs to be present and always needs to be first
+            if (rawArgs.Length == 0)
+            {
+                Console.WriteLine("No script file");
+                return;
+            }
+            else
+            {
+                scriptFile = rawArgs[0];
+
+                if (string.IsNullOrEmpty(scriptFile))
+                {
+                    Console.WriteLine("No script file");
+                    return;
+                }
+
+                if (!File.Exists(scriptFile))
+                {
+                    Console.WriteLine($"Script '{scriptFile}' does not exist");
+                    return;
+                }
+
+                var trimmedList = rawArgs.ToList();
+                trimmedList.RemoveAt(0);
+                rawArgs = trimmedList.ToArray();
+            }
+
             var parsedArgs = Arguments.Parse(rawArgs);
             CommandLine cl = new CommandLine();
             string[,] extras = {
@@ -20,37 +49,29 @@ namespace AngryWasp.BasicScript.App
                 return;
 
             Application.RegisterCommands();
-                
-            if (string.IsNullOrEmpty(cl.Script))
-            {
-                Console.WriteLine("No script file");
-                return;
-            }
 
-            if (!File.Exists(cl.Script))
-            {
-                Console.WriteLine($"Script '{cl.Script}' does not exist");
-                return;
-            }
+            Environment.SetEnvironmentVariable("BSI_SOURCE_DIR", Path.GetDirectoryName(Path.GetFullPath(scriptFile)));
+            Environment.SetEnvironmentVariable("BSI_SOURCE", Path.GetFullPath(scriptFile));
 
-            Environment.SetEnvironmentVariable("BSI_SOURCE_DIR", Path.GetDirectoryName(Path.GetFullPath(rawArgs[0])));
-            Environment.SetEnvironmentVariable("BSI_SOURCE", Path.GetFullPath(rawArgs[0]));
-
-            var x = 0;
             for (int i = 0; i < rawArgs.Length; i++)
                 if (rawArgs[i].ToLower() == "--env")
-                    Environment.SetEnvironmentVariable($"${++x}", rawArgs[++i]);
+                {
+                    var var = rawArgs[++i].Split('=');
+                    Environment.SetEnvironmentVariable(var[0], var[1]);
+                }
 
             try
             {
-                var interpreter = new Interpreter(File.ReadAllText(cl.Script), new ExecutionContext());
+                var interpreter = new Interpreter(File.ReadAllText(scriptFile), new ExecutionContext());
                 interpreter.printHandler += Console.WriteLine;
                 interpreter.inputHandler += Console.ReadLine;
                 interpreter.Exec();
-                interpreter.Lexer.AppendSource("\r\n" + cl.Entry + "\r\n");
-                interpreter.ResetToken();
-                Console.WriteLine(interpreter.Lexer.Source);
-                interpreter.Exec();
+                if (!string.IsNullOrEmpty(cl.Entry))
+                {
+                    interpreter.Lexer.AppendSource("\r\n" + cl.Entry + "\r\n");
+                    interpreter.ResetToken();
+                    interpreter.Exec();
+                }
             }
             catch (BasicException ex)
             {
