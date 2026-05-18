@@ -9,7 +9,7 @@
             "program": "${workspaceFolder}/Bin/Binaries/AngryWasp.BasicScript.Interpreter.dll",
             "args": [
                 "${workspaceFolder}/Samples/scratchpad.bs",
-                "--entry", "doStuff(\"whatever\", 1)",
+                "--run", "doStuff(\"whatever\", 1)",
                 "--env", "TESTENV1=hello",
                 "--env", "TESTENV2=world"
             ],

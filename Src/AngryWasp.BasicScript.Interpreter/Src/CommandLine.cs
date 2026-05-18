@@ -6,7 +6,7 @@ namespace AngryWasp.BasicScript.App
 {
     public class CommandLine
     {
-        [CommandLineArgument("entry", "Entry point to start the script")]
-        public string Entry { get; set; } = null;
+        [CommandLineArgument("run", "Run a line of code against the script")]
+        public string Run { get; set; } = null;
     }
 }

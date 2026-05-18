@@ -66,9 +66,9 @@ namespace AngryWasp.BasicScript.App
                 interpreter.printHandler += Console.WriteLine;
                 interpreter.inputHandler += Console.ReadLine;
                 interpreter.Exec();
-                if (!string.IsNullOrEmpty(cl.Entry))
+                if (!string.IsNullOrEmpty(cl.Run))
                 {
-                    interpreter.Lexer.AppendSource("\r\n" + cl.Entry + "\r\n");
+                    interpreter.Lexer.AppendSource("\r\n" + cl.Run + "\r\n");
                     interpreter.ResetToken();
                     interpreter.Exec();
                 }

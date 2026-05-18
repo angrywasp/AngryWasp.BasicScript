@@ -13,7 +13,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "presentation": {
                 "reveal": "silent"
@@ -21,59 +21,20 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build-release",
+            "label": "Publish to Nuget",
             "type": "shell",
-            "command": "dotnet",
+            "command": "bsi",
             "args": [
-                "build",
-                "-c",
-                "Release",
-                "${workspaceRoot}/Src/AngryWasp.BasicScript.Interpreter.slnx"
+                "${workspaceFolder}/External/AngryWasp.Build/publish.bs",
             ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "pack-release",
-            "type": "shell",
-            "command": "dotnet",
-            "args": [
-                "pack",
-                "-c",
-                "Release",
-                "${workspaceRoot}/Src/AngryWasp.BasicScript.Interpreter.slnx"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "publish",
-            "type": "shell",
-            "command": "dotnet",
-            "args": [
-                "publish",
-                "${workspaceRoot}/Src/AngryWasp.BasicScript.Interpreter.slnx"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
+                "reveal": "always",
+                "panel": "shared"
+            }
         }
     ]
 }

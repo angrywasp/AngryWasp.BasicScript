@@ -1,11 +1,13 @@
 using System;
 using System.Diagnostics;
+using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Crypto;
 
 namespace AngryWasp.BasicScript.App
 {
     public class ExternalTool
     {
-        public static int Run(string command, string arguments)
+        public static int Run(string command, string arguments, string envVar = null)
         {
             var processInfo = new ProcessStartInfo
             {
@@ -25,6 +27,8 @@ namespace AngryWasp.BasicScript.App
                 process.StartInfo = processInfo;
                 process.EnableRaisingEvents = true;
 
+                var output = string.Empty;
+
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
@@ -39,19 +43,37 @@ namespace AngryWasp.BasicScript.App
                     Console.WriteLine(args.Data);
                 };
                 
-                process.ErrorDataReceived += (sender, args) => {
-                    if (string.IsNullOrEmpty(args.Data))
-                        return;
+                if (envVar == null)
+                {
+                    process.ErrorDataReceived += (sender, args) => {
+                        if (string.IsNullOrEmpty(args.Data))
+                            return;
 
-                    if (args.Data.Length == 0)
-                        return;
+                        if (args.Data.Length == 0)
+                            return;
 
-                    Console.WriteLine(args.Data);
-                };
+                        Console.WriteLine(args.Data);
+                    };
+                }
+                else
+                {
+                    process.ErrorDataReceived += (sender, args) => {
+                        if (string.IsNullOrEmpty(args.Data))
+                            return;
+
+                        if (args.Data.Length == 0)
+                            return;
+
+                        output += args.Data;
+                    };
+                }
 
                 process.StandardInput.Close();
 
                 process.WaitForExit();
+
+                if (envVar != null)
+                    Environment.SetEnvironmentVariable(envVar, output);
 
                 return process.ExitCode;
             }

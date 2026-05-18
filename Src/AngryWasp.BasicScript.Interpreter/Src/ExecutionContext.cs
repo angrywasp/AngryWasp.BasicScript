@@ -401,10 +401,14 @@ namespace AngryWasp.BasicScript.App
             if (args.Count > 1 && args[1].Type != Value_Type.String)
                 throw new ArgumentException($"Argument 1 is incompatible type {args[1].Type}");
 
+            if (args.Count > 2 && args[2].Type != Value_Type.String)
+                throw new ArgumentException($"Argument 2 is incompatible type {args[2].Type}");
+
             var cmd = args[0].String;
             var arguments = args.Count == 1 ? string.Empty : args[1].String;
+            string envVar = args.Count > 2 ? args[2].String : null;
 
-            return new Value(ExternalTool.Run(cmd, arguments));
+            return new Value(ExternalTool.Run(cmd, arguments, envVar));
         }
 
         public Value Http(Interpreter interpreter, List<Value> args)
